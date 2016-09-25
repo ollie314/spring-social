@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,17 +15,34 @@
  */
 package org.springframework.social.config.annotation;
 
+import org.springframework.core.env.Environment;
+import org.springframework.social.UserIdSource;
 import org.springframework.social.connect.ConnectionFactoryLocator;
 import org.springframework.social.connect.UsersConnectionRepository;
 import org.springframework.social.connect.mem.InMemoryUsersConnectionRepository;
 
 /**
- * Abstract implementation of {@link SocialConfigurer} with convenient default implementations of some methods.
- * Currently only offers a default implementation of {@link SocialConfigurer#getUsersConnectionRepository(ConnectionFactoryLocator)}.
+ * Abstract implementation of {@link SocialConfigurer} with convenient default implementations of methods.
  * @author Craig Walls
  */
 public abstract class SocialConfigurerAdapter implements SocialConfigurer {
 
+	/**
+	 * Default implementation of {@link #addConnectionFactories(ConnectionFactoryConfigurer, Environment)}.
+	 * Implemented as a no-op, adding no connection factories.
+	 */
+	public void addConnectionFactories(ConnectionFactoryConfigurer connectionFactoryConfigurer, Environment environment) {
+	}
+	
+	/**
+	 * Default implementation of {@link #getUserIdSource()}.
+	 * Returns null, indicating that this configuration class doesn't provide a UserIdSource (another configuration class must provide one, however).
+	 * @return null
+	 */
+	public UserIdSource getUserIdSource() {
+		return null;
+	}
+	
 	/**
 	 * Default implementation of {@link #getUsersConnectionRepository(ConnectionFactoryLocator)} that creates an in-memory repository.
 	 */

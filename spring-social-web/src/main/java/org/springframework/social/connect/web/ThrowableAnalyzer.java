@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -143,10 +143,11 @@ class ThrowableAnalyzer {
      *
      * @return the types for which extractors are registered
      */
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     final Class<? extends Throwable>[] getRegisteredTypes() {
         Set<Class<? extends Throwable>> typeList = this.extractorMap.keySet();
-        return typeList.toArray(new Class[typeList.size()]);
+        Class[] a = new Class[typeList.size()];
+		return typeList.toArray(a);
     }
 
     /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,8 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 			OAuth2Parameters params =  new OAuth2Parameters();
 			params.setRedirectUri(buildReturnToUrl(request));
 			setScope(request, params);
-			params.add("state", connectionFactory.generateState()); // TODO: Verify the state value after callback
+			params.add("state", generateState(connectionFactory, request));
+			addCustomParameters(params);
 			throw new SocialAuthenticationRedirectException(getConnectionFactory().getOAuthOperations().buildAuthenticateUrl(params));
 		} else if (StringUtils.hasText(code)) {
 			try {
@@ -107,8 +108,13 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 		}
 	}
 
+	private String generateState(OAuth2ConnectionFactory<?> connectionFactory, HttpServletRequest request) {
+	    final String state = request.getParameter("state");
+	    return (state != null) ? state : connectionFactory.generateState();
+	}
+
 	protected String buildReturnToUrl(HttpServletRequest request) {
-		StringBuffer sb = request.getRequestURL();
+		StringBuffer sb = getProxyHeaderAwareRequestURL(request);
 		sb.append("?");
 		for (String name : getReturnToUrlParameters()) {
 			// Assume for simplicity that there is only one value
@@ -123,13 +129,41 @@ public class OAuth2AuthenticationService<S> extends AbstractSocialAuthentication
 		return sb.toString();
 	}
 
+	protected StringBuffer getProxyHeaderAwareRequestURL(HttpServletRequest request) {
+		String host = request.getHeader("Host");
+		if (StringUtils.isEmpty(host)) {
+			return request.getRequestURL();
+		}
+		StringBuffer sb = new StringBuffer();
+		String schemeHeader = request.getHeader("X-Forwarded-Proto");
+		String portHeader = request.getHeader("X-Forwarded-Port");
+		String scheme = StringUtils.isEmpty(schemeHeader) ? "http" : schemeHeader;
+		String port = StringUtils.isEmpty(portHeader) ? "80" : portHeader;
+		if (scheme.equals("http") && port.equals("80")){
+			port = "";
+		}
+		if (scheme.equals("https") && port.equals("443")){
+			port = "";
+		}
+		sb.append(scheme);
+		sb.append("://");
+		sb.append(host);
+		if (StringUtils.hasLength(port)){
+			sb.append(":");
+			sb.append(port);
+		}
+		sb.append(request.getRequestURI());
+		return sb;
+	}
 	private void setScope(HttpServletRequest request, OAuth2Parameters params) {
 		String requestedScope = request.getParameter("scope");
 		if (StringUtils.hasLength(requestedScope)) {
 			params.setScope(requestedScope);
-		} else {
+		} else if (StringUtils.hasLength(defaultScope)) {
 			params.setScope(defaultScope);
 		}
 	}
 
+	protected void addCustomParameters(OAuth2Parameters params) {
+	}
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,7 @@ public final class ConnectionKey implements Serializable {
 	 * The id of the provider as it is registered in the system.
 	 * This value should never change.
 	 * Never null.
+	 * @return The id of the provider as it is registered in the system.
 	 */	
 	public String getProviderId() {
 		return providerId;
@@ -55,6 +56,7 @@ public final class ConnectionKey implements Serializable {
 	 * This value should never change.
 	 * Must be present to support sign-in by the provider user.
 	 * Must be present to establish multiple connections with the provider.
+	 * @return The id of the external provider user representing the remote end of the connection.
 	 */
 	public String getProviderUserId() {
 		return providerUserId;

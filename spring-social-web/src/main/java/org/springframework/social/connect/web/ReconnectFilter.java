@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,7 +46,7 @@ import org.springframework.web.filter.GenericFilterBean;
  * 
  * <ul>
  * <li>If an exception is thrown, redirects to /connect/{provider ID}?reconnect=true</li>
- * </li>Handles its own redirect to /connect/{provider ID}?reconnect=true and converts the request to a POST request to {@link ConnectController} to kick of the authorization flow.
+ * <li>Handles its own redirect to /connect/{provider ID}?reconnect=true and converts the request to a POST request to {@link ConnectController} to kick of the authorization flow.</li>
  * </ul>
  * 
  * @since 1.1.0
@@ -146,7 +146,7 @@ public class ReconnectFilter extends GenericFilterBean {
 	}
 
 	private String getProviderIdFromRequest(HttpServletRequest httpRequest) {
-		return httpRequest.getServletPath().substring(CONNECT_PATH_LENGTH);
+		return httpRequest.getServletPath().substring(CONNECT_PATH_LENGTH).replace("/", "");
 	}
 	
 	private void handleExceptionFromFilterChain(Exception e, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException {
@@ -193,7 +193,7 @@ public class ReconnectFilter extends GenericFilterBean {
 	
 	private static final String CONNECT_PATH = "/connect/";
 
-	private static final int CONNECT_PATH_LENGTH = CONNECT_PATH.length()+1;
+	private static final int CONNECT_PATH_LENGTH = CONNECT_PATH.length();
 
 	private static final String RECONNECT_PARAMETER = "reconnect";
 

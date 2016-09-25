@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,12 +34,17 @@ public interface ProviderSignInInterceptor<S> {
 	/**
 	 * Called during sign in initiation, immediately before user authorization.
 	 * May be used to store custom connection attributes in the session before redirecting the user to the provider's site or to contribute parameters to the authorization URL.
+	 * @param connectionFactory The connection factory
+	 * @param parameters the parameters to be sent to the provider during authentication
+	 * @param request The web request
 	 */
 	void preSignIn(ConnectionFactory<S> connectionFactory, MultiValueMap<String, String> parameters, WebRequest request);
 
 	/**
 	 * Called immediately after the sign in is complete.
 	 * Used to invoke the service API on behalf of the user upon signing in.
+	 * @param connection the connection that was created in the course of provider sign-in
+	 * @param request the request
 	 */
 	void postSignIn(Connection<S> connection, WebRequest request);
 	

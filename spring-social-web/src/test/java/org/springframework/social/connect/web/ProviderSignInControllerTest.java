@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import static java.util.Arrays.*;
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.*;
 
 import java.util.Arrays;
@@ -39,17 +40,43 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.context.request.NativeWebRequest;
 
 public class ProviderSignInControllerTest {
-	
+
+	@Test
+	public void constructor() {
+		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
+		ConnectionFactory<TestApi1> connectionFactory1 = new StubOAuth1ConnectionFactory("clientId", "clientSecret");
+		connectionFactoryLocator.addConnectionFactory(connectionFactory1);
+		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
+		usersConnectionRepository.createConnectionRepository("habuma").addConnection(connectionFactory1.createConnection(
+			new ConnectionData("oauth1Provider", "provider1User1", null, null, null, null, null, null, null)));
+		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
+		providerSignInController.setApplicationUrl("my.url");
+	}
 	// OAuth 1
+
+	@Test
+	public void signIn_nonExistentProvider() throws Exception {
+		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
+		ConnectionFactory<TestApi1> connectionFactory1 = new StubOAuth1ConnectionFactory("clientId", "clientSecret");
+		connectionFactoryLocator.addConnectionFactory(connectionFactory1);
+		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
+		usersConnectionRepository.createConnectionRepository("habuma").addConnection(connectionFactory1.createConnection(
+			new ConnectionData("oauth1Provider", "provider1User1", null, null, null, null, null, null, null)));
+		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
+		providerSignInController.afterPropertiesSet();
+		MockMvc mockMvc = standaloneSetup(providerSignInController).build();
+		mockMvc.perform(post("/signin/nonExistentOAuth1Provider"))
+			.andExpect(redirectedUrl("/signin?error=provider"));
+	}
 
 	@Test
 	public void signIn_OAuth1Provider() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi1> connectionFactory1 = new StubOAuth1ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory1);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory1);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
 		usersConnectionRepository.createConnectionRepository("habuma").addConnection(connectionFactory1.createConnection(
-				new ConnectionData("oauth1Provider", "provider1User1", null, null, null, null, null, null, null)));
+			new ConnectionData("oauth1Provider", "provider1User1", null, null, null, null, null, null, null)));
 		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		providerSignInController.afterPropertiesSet();
 		MockMvc mockMvc = standaloneSetup(providerSignInController).build();
@@ -62,10 +89,10 @@ public class ProviderSignInControllerTest {
 	public void signIn_OAuth1Provider_exceptionWhileFetchingRequestToken() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi1> connectionFactory1 = new StubOAuth1ConnectionFactory("clientId", "clientSecret", StubOAuthTemplateBehavior.THROW_EXCEPTION);
-		connectionFactoryLocator.addConnectionFactory(connectionFactory1);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory1);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
 		usersConnectionRepository.createConnectionRepository("habuma").addConnection(connectionFactory1.createConnection(
-				new ConnectionData("oauth1Provider", "provider1User1", null, null, null, null, null, null, null)));
+			new ConnectionData("oauth1Provider", "provider1User1", null, null, null, null, null, null, null)));
 		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		providerSignInController.afterPropertiesSet();
 		MockMvc mockMvc = standaloneSetup(providerSignInController).build();
@@ -77,11 +104,11 @@ public class ProviderSignInControllerTest {
 	public void oauth1Callback_noMatchingUser() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi1> connectionFactory1 = new StubOAuth1ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory1);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory1);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
 		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		providerSignInController.afterPropertiesSet();
-		MockMvc mockMvc = standaloneSetup(providerSignInController).build();		
+		MockMvc mockMvc = standaloneSetup(providerSignInController).build();
 		mockMvc.perform(get("/signin/oauth1Provider").param("verifier", "verifier").param("oauth_token", "requestToken"))
 			.andExpect(redirectedUrl("/signup"))
 			.andExpect(request().sessionAttribute(ProviderSignInAttempt.class.getName(), notNullValue()));
@@ -92,12 +119,12 @@ public class ProviderSignInControllerTest {
 	public void oauth1Callback_noMatchingUser_customSignUpUrl() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi1> connectionFactory1 = new StubOAuth1ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory1);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory1);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
 		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		providerSignInController.setSignUpUrl("/register");
 		providerSignInController.afterPropertiesSet();
-		MockMvc mockMvc = standaloneSetup(providerSignInController).build();		
+		MockMvc mockMvc = standaloneSetup(providerSignInController).build();
 		mockMvc.perform(get("/signin/oauth1Provider").param("verifier", "verifier").param("oauth_token", "requestToken"))
 			.andExpect(redirectedUrl("/register"))
 			.andExpect(request().sessionAttribute(ProviderSignInAttempt.class.getName(), notNullValue()));
@@ -108,11 +135,11 @@ public class ProviderSignInControllerTest {
 	public void oauth1Callback_multipleMatchingUsers() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi1> connectionFactory1 = new StubOAuth1ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory1);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory1);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository(Arrays.asList("testuser1", "testuser2"));
 		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		providerSignInController.afterPropertiesSet();
-		MockMvc mockMvc = standaloneSetup(providerSignInController).build();		
+		MockMvc mockMvc = standaloneSetup(providerSignInController).build();
 		mockMvc.perform(get("/signin/oauth1Provider").param("verifier", "verifier").param("oauth_token", "requestToken"))
 			.andExpect(redirectedUrl("/signin?error=multiple_users"));
 	}
@@ -121,23 +148,23 @@ public class ProviderSignInControllerTest {
 	public void oauth1Callback_multipleMatchingUsers_customSignInUrl() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi1> connectionFactory1 = new StubOAuth1ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory1);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory1);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository(Arrays.asList("testuser1", "testuser2"));
 		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		providerSignInController.setSignInUrl("/customsignin?param=1234");
 		providerSignInController.afterPropertiesSet();
-		MockMvc mockMvc = standaloneSetup(providerSignInController).build();		
+		MockMvc mockMvc = standaloneSetup(providerSignInController).build();
 		mockMvc.perform(get("/signin/oauth1Provider").param("verifier", "verifier").param("oauth_token", "requestToken"))
 			.andExpect(redirectedUrl("/customsignin?param=1234&error=multiple_users"));
 	}
-	
+
 	@Test
 	public void oauth1Callback_errorWhileExchangingForAccessToken() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi1> connectionFactory1 = new StubOAuth1ConnectionFactory("clientId", "clientSecret", StubOAuthTemplateBehavior.THROW_EXCEPTION);
-		connectionFactoryLocator.addConnectionFactory(connectionFactory1);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory1);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository(Arrays.asList("testuser1"));
-		MockMvc mockMvc = standaloneSetup(new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null)).build();		
+		MockMvc mockMvc = standaloneSetup(new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null)).build();
 		mockMvc.perform(get("/signin/oauth1Provider").param("verifier", "verifier").param("oauth_token", "requestToken"))
 			.andExpect(redirectedUrl("/signin?error=provider"));
 	}
@@ -157,10 +184,10 @@ public class ProviderSignInControllerTest {
 		performOAuth1Callback("/original", null);
 	}
 
-	private void performOAuth1Callback(String originalUrl, String postSignInUrl) throws Exception {		
+	private void performOAuth1Callback(String originalUrl, String postSignInUrl) throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi1> connectionFactory1 = new StubOAuth1ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory1);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory1);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository(asList("habuma"));
 		SignInAdapter signInAdapter = new TestSignInAdapter(originalUrl);
 		ProviderSignInController controller = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, signInAdapter);
@@ -168,24 +195,23 @@ public class ProviderSignInControllerTest {
 			controller.setPostSignInUrl(postSignInUrl);
 		}
 		controller.afterPropertiesSet();
-		
+
 		String expectedRedirectUrl = calculateExpectedRedirectUrl(originalUrl, postSignInUrl);
-		MockMvc mockMvc = standaloneSetup(controller).build();		
+		MockMvc mockMvc = standaloneSetup(controller).build();
 		mockMvc.perform(get("/signin/oauth1Provider").param("verifier", "verifier").param("oauth_token", "requestToken"))
 			.andExpect(redirectedUrl(expectedRedirectUrl));
 		// TODO: Verify that the connection is updated (connectionRepository.updateConnection() is called)
 	}
 
 	// OAuth 2
-
 	@Test
 	public void signIn_OAuth2Provider() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi2> connectionFactory2 = new StubOAuth2ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory2);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory2);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
 		usersConnectionRepository.createConnectionRepository("habuma").addConnection(connectionFactory2.createConnection(
-				new ConnectionData("oauth2Provider", "provider2User1", null, null, null, null, null, null, null)));
+			new ConnectionData("oauth2Provider", "provider2User1", null, null, null, null, null, null, null)));
 		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		providerSignInController.afterPropertiesSet();
 		MockMvc mockMvc = standaloneSetup(providerSignInController).build();
@@ -197,12 +223,13 @@ public class ProviderSignInControllerTest {
 	public void oauth2Callback_noMatchingUser() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi2> connectionFactory2 = new StubOAuth2ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory2);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory2);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
 		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		providerSignInController.afterPropertiesSet();
-		MockMvc mockMvc = standaloneSetup(providerSignInController).build();		
-		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode"))
+		MockMvc mockMvc = standaloneSetup(providerSignInController).build();
+		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode").param("state", "STATE")
+				.sessionAttr("oauth2State", "STATE"))
 			.andExpect(redirectedUrl("/signup"))
 			.andExpect(request().sessionAttribute(ProviderSignInAttempt.class.getName(), notNullValue()));
 		// TODO: Assert attempt contents
@@ -212,13 +239,14 @@ public class ProviderSignInControllerTest {
 	public void oauth2Callback_noMatchingUser_customSignUpUrl() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi2> connectionFactory2 = new StubOAuth2ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory2);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory2);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
 		ProviderSignInController controller = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		controller.setSignUpUrl("/register");
 		controller.afterPropertiesSet();
-		MockMvc mockMvc = standaloneSetup(controller).build();		
-		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode"))
+		MockMvc mockMvc = standaloneSetup(controller).build();
+		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode").param("state", "STATE")
+				.sessionAttr("oauth2State", "STATE"))
 			.andExpect(redirectedUrl("/register"))
 			.andExpect(request().sessionAttribute(ProviderSignInAttempt.class.getName(), notNullValue()));
 		// TODO: Assert attempt contents
@@ -231,10 +259,10 @@ public class ProviderSignInControllerTest {
 		connectionFactoryLocator.addConnectionFactory(connectionFactory2);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
 		ProviderSignInController controller = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
-		MockMvc mockMvc = standaloneSetup(controller).build();		
+		MockMvc mockMvc = standaloneSetup(controller).build();
 		mockMvc.perform(get("/signin/oauth2Provider").param("error", "access_denied"))
 			.andExpect(redirectedUrl("/signin?error=access_denied"));
-		
+
 	}
 
 	@Test
@@ -244,11 +272,11 @@ public class ProviderSignInControllerTest {
 		connectionFactoryLocator.addConnectionFactory(connectionFactory2);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository();
 		ProviderSignInController controller = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
-		MockMvc mockMvc = standaloneSetup(controller).build();		
+		MockMvc mockMvc = standaloneSetup(controller).build();
 		mockMvc.perform(get("/signin/oauth2Provider")
-				.param("error", "access_denied")
-				.param("error_description", "The user said no.")
-				.param("error_uri", "http://provider.com/user/said/no"))
+			.param("error", "access_denied")
+			.param("error_description", "The user said no.")
+			.param("error_uri", "http://provider.com/user/said/no"))
 			.andExpect(redirectedUrl("/signin?error=access_denied&error_description=The+user+said+no.&error_uri=http%3A%2F%2Fprovider.com%2Fuser%2Fsaid%2Fno"));
 	}
 
@@ -256,36 +284,38 @@ public class ProviderSignInControllerTest {
 	public void oauth2Callback_multipleMatchingUsers() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi2> connectionFactory2 = new StubOAuth2ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory2);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory2);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository(asList("testuser1", "testuser2"));
 		ProviderSignInController providerSignInController = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		providerSignInController.afterPropertiesSet();
-		MockMvc mockMvc = standaloneSetup(providerSignInController).build();		
-		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode"))
+		MockMvc mockMvc = standaloneSetup(providerSignInController).build();
+		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode").param("state", "STATE")
+				.sessionAttr("oauth2State", "STATE"))
 			.andExpect(redirectedUrl("/signin?error=multiple_users"));
 	}
-	
+
 	@Test
 	public void oauth2Callback_multipleMatchingUsers_customSignInUrl() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi2> connectionFactory2 = new StubOAuth2ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory2);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory2);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository(asList("testuser1", "testuser2"));
 		ProviderSignInController controller = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null);
 		controller.afterPropertiesSet();
 		controller.setSignInUrl("/customsignin?someparameter=1234");
-		MockMvc mockMvc = standaloneSetup(controller).build();		
-		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode"))
+		MockMvc mockMvc = standaloneSetup(controller).build();
+		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode").param("state", "STATE")
+				.sessionAttr("oauth2State", "STATE"))
 			.andExpect(redirectedUrl("/customsignin?someparameter=1234&error=multiple_users"));
 	}
-	
+
 	@Test
 	public void oauth2Callback_errorWhileExchangingForAccessToken() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi2> connectionFactory2 = new StubOAuth2ConnectionFactory("clientId", "clientSecret", StubOAuthTemplateBehavior.THROW_EXCEPTION);
-		connectionFactoryLocator.addConnectionFactory(connectionFactory2);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory2);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository(asList("testuser1"));
-		MockMvc mockMvc = standaloneSetup(new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null)).build();		
+		MockMvc mockMvc = standaloneSetup(new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, null)).build();
 		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode"))
 			.andExpect(redirectedUrl("/signin?error=provider"));
 	}
@@ -308,7 +338,7 @@ public class ProviderSignInControllerTest {
 	private void performOAuth2Callback(String originalUrl, String postSignInUrl) throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
 		ConnectionFactory<TestApi2> connectionFactory2 = new StubOAuth2ConnectionFactory("clientId", "clientSecret");
-		connectionFactoryLocator.addConnectionFactory(connectionFactory2);				
+		connectionFactoryLocator.addConnectionFactory(connectionFactory2);
 		StubUsersConnectionRepository usersConnectionRepository = new StubUsersConnectionRepository(asList("testuser"));
 		SignInAdapter signInAdapter = new TestSignInAdapter(originalUrl);
 		ProviderSignInController controller = new ProviderSignInController(connectionFactoryLocator, usersConnectionRepository, signInAdapter);
@@ -316,31 +346,33 @@ public class ProviderSignInControllerTest {
 		if (postSignInUrl != null) {
 			controller.setPostSignInUrl(postSignInUrl);
 		}
-		MockMvc mockMvc = standaloneSetup(controller).build();		
-		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode"))
+		MockMvc mockMvc = standaloneSetup(controller).build();
+		mockMvc.perform(get("/signin/oauth2Provider").param("code", "authcode").param("state", "STATE")
+				.sessionAttr("oauth2State", "STATE"))
 			.andExpect(redirectedUrl(calculateExpectedRedirectUrl(originalUrl, postSignInUrl)));
 		// TODO: Verify that the connection is updated (connectionRepository.updateConnection() is called)
 	}
-	
+
 	private static class TestSignInAdapter implements SignInAdapter {
+
 		private final String originalUrl;
-		
+
 		public TestSignInAdapter(String originalUrl) {
 			this.originalUrl = originalUrl;
 		}
-		
+
 		public String signIn(String userId, Connection<?> connection, NativeWebRequest request) {
 			return originalUrl;
 		}
 	}
-	
+
 	private String calculateExpectedRedirectUrl(String originalUrl, String postSignInUrl) {
 		String expectedRedirectUrl = "/";
 		if (originalUrl == null) {
 			if (postSignInUrl != null) {
 				expectedRedirectUrl = postSignInUrl;
 			}
-		} else {			
+		} else {
 			expectedRedirectUrl = originalUrl;
 		}
 		return expectedRedirectUrl;

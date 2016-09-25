@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -138,7 +138,7 @@ public class OAuth2Connection<A> extends AbstractConnection<A> {
 	private void initApiProxy() {
 		Class<?> apiType = GenericTypeResolver.resolveTypeArgument(serviceProvider.getClass(), ServiceProvider.class);
 		if (apiType.isInterface()) {
-			apiProxy = (A) Proxy.newProxyInstance(apiType.getClassLoader(), new Class[] { apiType }, new ApiInvocationHandler());
+			apiProxy = (A) Proxy.newProxyInstance(apiType.getClassLoader(), new Class<?>[] { apiType }, new ApiInvocationHandler());
 		}		
 	}
 	
@@ -147,7 +147,7 @@ public class OAuth2Connection<A> extends AbstractConnection<A> {
 		public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 			synchronized (getMonitor()) {
 				if (hasExpired()) {
-					throw new ExpiredAuthorizationException(null); // TODO: Revisit this null as providerId
+					throw new ExpiredAuthorizationException(getKey().getProviderId());
 				}
 				try {
 					return method.invoke(OAuth2Connection.this.api, args);
@@ -174,6 +174,7 @@ public class OAuth2Connection<A> extends AbstractConnection<A> {
 		if (this == obj) return true;
 		if (!super.equals(obj)) return false;
 		if (getClass() != obj.getClass()) return false;
+		@SuppressWarnings("rawtypes")
 		OAuth2Connection other = (OAuth2Connection) obj;
 		
 		if (accessToken == null) {

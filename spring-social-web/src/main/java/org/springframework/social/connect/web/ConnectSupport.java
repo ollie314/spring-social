@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -169,8 +169,8 @@ public class ConnectSupport {
 	private void verifyStateParameter(NativeWebRequest request) {
 		String state = request.getParameter("state");
 		String originalState = extractCachedOAuth2State(request);
-		if (state != null && !state.equals(originalState)) {
-			throw new IllegalStateException("The OAuth2 'state' parameter doesn't match.");
+		if (state == null || !state.equals(originalState)) {
+			throw new IllegalStateException("The OAuth2 'state' parameter is missing or doesn't match.");
 		}
 	}
 

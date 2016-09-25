@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,16 +25,17 @@ public class ApiException extends SocialException {
 	private String providerId;
 
 	public ApiException(String providerId, String message) {
-		super(message);
-		this.providerId = providerId;
+		this(providerId, message, null);
 	}
 
 	public ApiException(String providerId, String message, Throwable cause) {
 		super(message, cause);
+		this.providerId = providerId;
 	}
 	
 	/**
 	 * The ID of the provider for which the API exception occurred.
+	 * @return The ID of the provider for which the API exception occurred.
 	 */
 	public String getProviderId() {
 		return providerId;

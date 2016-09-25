@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,6 +44,16 @@ import org.springframework.social.connect.UsersConnectionRepository;
 public class SpringSocialConfigurer extends SecurityConfigurerAdapter<DefaultSecurityFilterChain, HttpSecurity> {
 
 	private UserIdSource userIdSource;
+	
+	private String postLoginUrl;
+	
+	private String postFailureUrl;
+
+	private String signupUrl;
+
+	private String connectionAddedRedirectUrl;
+
+	private boolean alwaysUsePostLoginUrl = false;
 
 	/**
 	 * Constructs a SpringSocialHttpConfigurer.
@@ -65,11 +75,29 @@ public class SpringSocialConfigurer extends SecurityConfigurerAdapter<DefaultSec
 				userIdSource != null ? userIdSource : new AuthenticationNameUserIdSource(), 
 				usersConnectionRepository, 
 				authServiceLocator);
-
+		
 		RememberMeServices rememberMe = http.getSharedObject(RememberMeServices.class);
-		if(rememberMe != null) {
+		if (rememberMe != null) {
 			filter.setRememberMeServices(rememberMe);
 		}
+		
+		if (postLoginUrl != null) {
+			filter.setPostLoginUrl(postLoginUrl);
+			filter.setAlwaysUsePostLoginUrl(alwaysUsePostLoginUrl);
+		}
+		
+		if (postFailureUrl != null) {
+			filter.setPostFailureUrl(postFailureUrl);
+		}
+
+		if (signupUrl != null) {
+			filter.setSignupUrl(signupUrl);
+		}
+
+		if (connectionAddedRedirectUrl != null) {
+			filter.setConnectionAddedRedirectUrl(connectionAddedRedirectUrl);
+		}
+		
 		http.authenticationProvider(
 				new SocialAuthenticationProvider(usersConnectionRepository, socialUsersDetailsService))
 			.addFilterBefore(postProcess(filter), AbstractPreAuthenticatedProcessingFilter.class);
@@ -86,9 +114,70 @@ public class SpringSocialConfigurer extends SecurityConfigurerAdapter<DefaultSec
 	
 	/**
 	 * Sets the {@link UserIdSource} to use for authentication. Defaults to {@link AuthenticationNameUserIdSource}.
+	 * @param userIdSource the UserIdSource to use when authenticating
+	 * @return this SpringSocialConfigurer for chained configuration
 	 */
 	public SpringSocialConfigurer userIdSource(UserIdSource userIdSource) {
 		this.userIdSource = userIdSource;
+		return this;
+	}
+	
+	/**
+	 * Sets the URL to land on after a successful login.
+	 * @param postLoginUrl the URL to redirect to after a successful login
+     * @return this SpringSocialConfigurer for chained configuration
+	 */
+	public SpringSocialConfigurer postLoginUrl(String postLoginUrl) {
+		this.postLoginUrl = postLoginUrl;
+		return this;
+	}
+	
+	/**
+	 * If true, always redirect to postLoginUrl, even if a pre-signin target is in the request cache.
+	 * @param alwaysUsePostLoginUrl if true, always redirect to the postLoginUrl
+     * @return this SpringSocialConfigurer for chained configuration
+	 */
+	public SpringSocialConfigurer alwaysUsePostLoginUrl(boolean alwaysUsePostLoginUrl) {
+		this.alwaysUsePostLoginUrl = alwaysUsePostLoginUrl;
+		return this;
+	}
+	
+	/**
+	 * Sets the URL to redirect to if authentication fails or if authorization is denied by the user.
+	 * @param postFailureUrl the URL to redirect to after an authentication fail or authorization deny
+	 * @return this SpringSocialConfigurer for chained configuration
+	 */
+	public SpringSocialConfigurer postFailureUrl(String postFailureUrl) {
+		this.postFailureUrl = postFailureUrl;
+		return this;
+	}
+
+	/**
+	 * Sets the URL to land on after an authentication failure so that the user can register with the application.
+	 * @param signupUrl the URL to redirect to after an authentication failure
+	 * @return this SpringSocialConfigurer for chained configuration
+	 */
+	public SpringSocialConfigurer signupUrl(String signupUrl) {
+		this.signupUrl = signupUrl;
+		return this;
+	}
+
+	/**
+	 * Sets the URL to land on after an a connection was added.
+	 * @param connectionAddedRedirectUrl the URL to redirect after a connection was added
+	 * @return this SpringSocialConfigurer for chained configuration
+	 */
+	public SpringSocialConfigurer connectionAddedRedirectUrl(String connectionAddedRedirectUrl) {
+		this.connectionAddedRedirectUrl = connectionAddedRedirectUrl;
+		return this;
+	}
+
+	/**
+	 * @deprecated use {@link #postFailureUrl(String)} instead
+	 */
+	@Deprecated
+	public SpringSocialConfigurer defaultFailureUrl(String defaultFailureUrl) {
+		postFailureUrl(defaultFailureUrl);
 		return this;
 	}
 	

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 import static org.springframework.social.connect.web.test.StubOAuthTemplateBehavior.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.setup.MockMvcBuilders.*;
 
 import java.util.ArrayList;
@@ -34,7 +35,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.social.connect.Connection;
 import org.springframework.social.connect.ConnectionData;
 import org.springframework.social.connect.ConnectionFactory;
+import org.springframework.social.connect.ConnectionRepository;
 import org.springframework.social.connect.DuplicateConnectionException;
+import org.springframework.social.connect.mem.InMemoryUsersConnectionRepository;
 import org.springframework.social.connect.support.ConnectionFactoryRegistry;
 import org.springframework.social.connect.web.test.StubConnectionRepository;
 import org.springframework.social.connect.web.test.StubOAuth1ConnectionFactory;
@@ -63,6 +66,14 @@ public class ConnectControllerTest {
 		mockMvc.perform(post("/connect/noSuchProvider"));
 	}
 
+	@Test
+	public void createConnectController_setApplicationUrl() throws Exception {
+		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
+		ConnectionRepository connectionRepository = new InMemoryUsersConnectionRepository(connectionFactoryLocator).createConnectionRepository("userid");
+		ConnectController controller = new ConnectController(connectionFactoryLocator, connectionRepository);
+		controller.setApplicationUrl("http://baseurl.com/");
+	}
+	
 	@Test
 	public void connectionStatus() throws Exception {
 		ConnectionFactoryRegistry connectionFactoryLocator = new ConnectionFactoryRegistry();
@@ -281,9 +292,10 @@ public class ConnectControllerTest {
 		List<ConnectInterceptor<?>> interceptors = getConnectInterceptor();
 		connectController.setConnectInterceptors(interceptors);
 		connectController.afterPropertiesSet();
-		MockMvc mockMvc = standaloneSetup(connectController).build();
+		MockMvc mockMvc = standaloneSetup(connectController)
+				.build();
 		assertEquals(0, connectionRepository.findConnections("oauth2Provider").size());		
-		mockMvc.perform(get("/connect/oauth2Provider").param("code", "oauth2Code"))
+		mockMvc.perform(get("/connect/oauth2Provider").param("code", "oauth2Code").param("state", "STATE").sessionAttr("oauth2State", "STATE"))
 			.andExpect(redirectedUrl("/connect/oauth2Provider"));
 		List<Connection<?>> connections = connectionRepository.findConnections("oauth2Provider");
 		assertEquals(1, connections.size());

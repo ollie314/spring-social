@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ public interface OAuth1ServiceProvider<A> extends ServiceProvider<A> {
 	/**
 	 * Get the service interface for carrying out the "OAuth dance" with this provider.
 	 * The result of the OAuth dance is an access token that can be used to obtain a {@link #getApi(String, String) API binding}.
+	 * @return the service interface for carrying out the "OAuth dance" with this provider.
 	 */
 	OAuth1Operations getOAuthOperations();
 

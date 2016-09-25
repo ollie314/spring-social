@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,21 +31,65 @@ public class UserProfile implements Serializable {
 	/**
 	 * Shared, empty profile that when used indicates no profile data is available (all property values are null).
 	 */
-	public static final UserProfile EMPTY = new UserProfile(null, null, null, null, null);
+	public static final UserProfile EMPTY = new UserProfile(null, null, null, null, null, null);
+
+	private final String id;
 
 	private final String name;
-	
+
 	private final String firstName;
-	
+
 	private final String lastName;
-	
+
 	private final String email;
-	
+
 	private final String username;
+
+	/**
+	 * Creates an instance of a UserProfile.
+	 * @param name The user's full name
+	 * @param firstName The user's first name
+	 * @param lastName The user's last name
+	 * @param email The user's email address
+	 * @param username The user's username
+	 * @deprecated Use other constructor instead
+	 */
+	@Deprecated
+	public UserProfile(String name, String firstName, String lastName, String email, String username) {
+		this(null, name, firstName, lastName, email, username);
+	}
+	
+	/**
+	 * Creates an instance of a UserProfile.
+	 * @param id The user ID
+	 * @param name The user's full name
+	 * @param firstName The user's first name
+	 * @param lastName The user's last name
+	 * @param email The user's email address
+	 * @param username The user's username
+	 */
+	public UserProfile(String id, String name, String firstName, String lastName, String email, String username) {
+		this.id = id;
+		this.name = name;
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.email = email;
+		this.username = username;
+	}
+
+	/**
+	 * The user's id in the provider
+	 * May be null if not exposed/supported by the provider.
+	 * @return the user's id in the provider
+	 */
+	public String getId() {
+		return id;
+	}
 
 	/**
 	 * The user's registered full name e.g. Keith Donald.
 	 * May be null if not exposed/supported by the provider. 
+	 * @return the user's registered full name
 	 */
 	public String getName() {
 		return name;
@@ -54,6 +98,7 @@ public class UserProfile implements Serializable {
 	/**
 	 * The user's registered first name e.g. Keith.
 	 * May be null if not exposed/supported by the provider.
+	 * @return The user's registered first name
 	 */
 	public String getFirstName() {
 		return firstName;
@@ -62,6 +107,7 @@ public class UserProfile implements Serializable {
 	/**
 	 * The user's registered last name e.g. Donald.
 	 * May be null if not exposed/supported by the provider.
+	 * @return The user's registered last name
 	 */
 	public String getLastName() {
 		return lastName;
@@ -70,6 +116,7 @@ public class UserProfile implements Serializable {
 	/**
 	 * The user's registered email address.
 	 * May be null if not exposed/supported by the provider.
+	 * @return The user's registered email address.
 	 */
 	public String getEmail() {
 		return email;
@@ -78,19 +125,10 @@ public class UserProfile implements Serializable {
 	/**
 	 * The user's registered username e.g. kdonald.
 	 * May be null if not exposed/supported by the provider.
+	 * @return The user's registered username
 	 */
 	public String getUsername() {
 		return username;
-	}
-
-	// builder only
-	
-	UserProfile(String name, String firstName, String lastName, String email, String username) {
-		this.name = name;
-		this.firstName = firstName;
-		this.lastName = lastName;
-		this.email = email;
-		this.username = username;
 	}
 
 }

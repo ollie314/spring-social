@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,19 +24,33 @@ package org.springframework.social.connect;
  */
 public class UserProfileBuilder {
 
+	private String id;
+
 	private String name;
-	
+
 	private String firstName;
-	
+
 	private String lastName;
-	
+
 	private String email;
-	
+
 	private String username;
-	
+
+	/**
+	 * Sets the profile id field.
+	 * @param id the user's id in the provider
+	 * @return this {@link UserProfileBuilder} for setting more properties
+	 */
+	public UserProfileBuilder setId(String id) {
+		this.id = id;
+		return this;
+	}
+
 	/**
 	 * Sets the profile name field.
 	 * Note: parses the name string and sets the individual firstName and lastName fields as well.
+	 * @param name the user's name
+	 * @return this {@link UserProfileBuilder} for setting more properties
 	 */
 	public UserProfileBuilder setName(String name) {
 		this.name = name;
@@ -48,6 +62,8 @@ public class UserProfileBuilder {
 
 	/**
 	 * Sets the profile firstName field.
+	 * @param firstName the user's first name
+	 * @return this {@link UserProfileBuilder} for setting more properties
 	 */
 	public UserProfileBuilder setFirstName(String firstName) {
 		this.firstName = firstName;
@@ -56,6 +72,8 @@ public class UserProfileBuilder {
 
 	/**
 	 * Sets the profile lastName field.
+	 * @param lastName the user's last name
+	 * @return this {@link UserProfileBuilder} for setting more properties
 	 */
 	public UserProfileBuilder setLastName(String lastName) {
 		this.lastName = lastName;
@@ -64,30 +82,35 @@ public class UserProfileBuilder {
 
 	/**
 	 * Sets the profile email field.
+	 * @param email the user's email address
+	 * @return this {@link UserProfileBuilder} for setting more properties
 	 */
 	public UserProfileBuilder setEmail(String email) {
 		this.email = email;
-		return this;		
+		return this;
 	}
 
 	/**
 	 * Sets the profile username field.
+	 * @param username the user's username
+	 * @return this {@link UserProfileBuilder} for setting more properties
 	 */
 	public UserProfileBuilder setUsername(String username) {
 		this.username = username;
-		return this;		
+		return this;
 	}
 
 	/**
 	 * Builds the user profile.
 	 * Call this method after setting all profile field values.
+	 * @return the {@link UserProfile}
 	 */
 	public UserProfile build() {
-		return new UserProfile(name, firstName, lastName, email, username);
+		return new UserProfile(id, name, firstName, lastName, email, username);
 	}
-	
+
 	// internal helpers
-	
+
 	private String[] firstAndLastName(String name) {
 		if (name == null) {
 			return EMPTY_FIRST_AND_LAST_NAME_ARRAY;
@@ -99,7 +122,7 @@ public class UserProfileBuilder {
 			return new String[] { nameParts[0], nameParts[nameParts.length - 1] };
 		}
 	}
-	
+
 	private String[] EMPTY_FIRST_AND_LAST_NAME_ARRAY = new String[] { null, null };
 
 }

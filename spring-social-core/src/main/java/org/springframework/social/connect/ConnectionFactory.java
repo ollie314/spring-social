@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ public abstract class ConnectionFactory<A> {
 	/**
 	 * The unique id of the provider this factory creates connections to.
 	 * Used to index this {@link ConnectionFactory} in a registry to support dynamic lookup operations.
-	 * @see ConnectionFactoryLocator#getConnectionFactory(String).
+	 * @return the provider ID
 	 */
 	public String getProviderId() {
 		return providerId;
@@ -56,6 +56,7 @@ public abstract class ConnectionFactory<A> {
 
 	/**
 	 * Exposes the ServiceProvider instance to subclasses.
+	 * @return the service provider
 	 */
 	protected ServiceProvider<A> getServiceProvider() {
 		return serviceProvider;
@@ -63,6 +64,7 @@ public abstract class ConnectionFactory<A> {
 
 	/**
 	 * Exposes the ApiAdapter to subclasses.
+	 * @return the ApiAdapter
 	 */
 	protected ApiAdapter<A> getApiAdapter() {
 		return apiAdapter;

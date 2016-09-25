@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationServiceException;
@@ -39,9 +38,12 @@ import org.springframework.social.connect.Connection;
 import org.springframework.social.connect.ConnectionData;
 import org.springframework.social.connect.ConnectionRepository;
 import org.springframework.social.connect.UsersConnectionRepository;
+import org.springframework.social.connect.web.HttpSessionSessionStrategy;
 import org.springframework.social.connect.web.ProviderSignInAttempt;
+import org.springframework.social.connect.web.SessionStrategy;
 import org.springframework.social.security.provider.SocialAuthenticationService;
 import org.springframework.util.Assert;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 /**
@@ -66,16 +68,17 @@ public class SocialAuthenticationFilter extends AbstractAuthenticationProcessing
 
 	private UsersConnectionRepository usersConnectionRepository;
 
-	private SimpleUrlAuthenticationFailureHandler delegateAuthenticationFailureHandler;
+	private SessionStrategy sessionStrategy = new HttpSessionSessionStrategy();	
+
+	private String filterProcessesUrl = DEFAULT_FILTER_PROCESSES_URL;
 
 	public SocialAuthenticationFilter(AuthenticationManager authManager, UserIdSource userIdSource, UsersConnectionRepository usersConnectionRepository, SocialAuthenticationServiceLocator authServiceLocator) {
-		super("/auth");
+		super(DEFAULT_FILTER_PROCESSES_URL);
 		setAuthenticationManager(authManager);
 		this.userIdSource = userIdSource;
 		this.usersConnectionRepository = usersConnectionRepository;
 		this.authServiceLocator = authServiceLocator;
-		this.delegateAuthenticationFailureHandler = new SimpleUrlAuthenticationFailureHandler(DEFAULT_FAILURE_URL);
-		super.setAuthenticationFailureHandler(new SocialAuthenticationFailureHandler(delegateAuthenticationFailureHandler));
+		super.setAuthenticationFailureHandler(new SocialAuthenticationFailureHandler(new SimpleUrlAuthenticationFailureHandler(DEFAULT_FAILURE_URL)));
 	}
 	
 	/**
@@ -88,11 +91,11 @@ public class SocialAuthenticationFilter extends AbstractAuthenticationProcessing
 	}
 	
 	/**
-	 * The URL to redirect to if authentication fails or if authorization is denied by the user.
-	 * @param defaultFailureUrl The failure URL. Defaults to "/signin" (relative to the servlet context).
+	 * @deprecated use {@link #setPostFailureUrl(String)} instead
 	 */
+	@Deprecated
 	public void setDefaultFailureUrl(String defaultFailureUrl) {
-		delegateAuthenticationFailureHandler.setDefaultFailureUrl(defaultFailureUrl);
+		setPostFailureUrl(defaultFailureUrl);
 	}
 
 	public void setConnectionAddedRedirectUrl(String connectionAddedRedirectUrl) {
@@ -113,14 +116,42 @@ public class SocialAuthenticationFilter extends AbstractAuthenticationProcessing
 		}
 	}
 
+	public void setAlwaysUsePostLoginUrl(boolean alwaysUsePostLoginUrl) {
+		AuthenticationSuccessHandler successHandler = getSuccessHandler();
+		if (successHandler instanceof AbstractAuthenticationTargetUrlRequestHandler) {
+			AbstractAuthenticationTargetUrlRequestHandler h = (AbstractAuthenticationTargetUrlRequestHandler) successHandler;
+			h.setAlwaysUseDefaultTargetUrl(alwaysUsePostLoginUrl);
+		} else {
+			throw new IllegalStateException("can't set alwaysUsePostLoginUrl on unknown successHandler, type is " + successHandler.getClass().getName());
+		}
+	}
+
+	/**
+	 * The URL to redirect to if authentication fails or if authorization is denied by the user.
+	 * @param postFailureUrl The failure URL. Defaults to "/signin" (relative to the servlet context).
+	 */
 	public void setPostFailureUrl(String postFailureUrl) {
 		AuthenticationFailureHandler failureHandler = getFailureHandler();
+
+		if (failureHandler instanceof SocialAuthenticationFailureHandler) {
+			failureHandler = ((SocialAuthenticationFailureHandler)failureHandler).getDelegate();
+		}
+
 		if (failureHandler instanceof SimpleUrlAuthenticationFailureHandler) {
 			SimpleUrlAuthenticationFailureHandler h = (SimpleUrlAuthenticationFailureHandler) failureHandler;
 			h.setDefaultFailureUrl(postFailureUrl);
 		} else {
 			throw new IllegalStateException("can't set postFailureUrl on unknown failureHandler, type is " + failureHandler.getClass().getName());
 		}
+	}
+	
+	/**
+	 * Sets a strategy to use when persisting information that is to survive past the boundaries of a request.
+	 * The default strategy is to set the data as attributes in the HTTP Session.
+	 * @param sessionStrategy the session strategy.
+	 */
+	public void setSessionStrategy(SessionStrategy sessionStrategy) {
+		this.sessionStrategy = sessionStrategy;
 	}
 
 	public UsersConnectionRepository getUsersConnectionRepository() {
@@ -154,13 +185,17 @@ public class SocialAuthenticationFilter extends AbstractAuthenticationProcessing
 
 	/**
 	 * Detects a callback request after a user rejects authorization to prevent a never-ending redirect loop.
-	 * Default implementation detects a rejection as a request that has one or more parameters, but none of the expected parameters (oauth_token, code, scope).
+	 * Default implementation detects a rejection as a request that has one or more parameters
+	 * (except 'state' parameter which can be used by application), but none of the expected parameters (oauth_token, code, scope).
 	 * May be overridden to customize rejection detection.
 	 * @param request the request to check for rejection.
 	 * @return true if the request appears to be the result of a rejected authorization; false otherwise.
 	 */
 	protected boolean detectRejection(HttpServletRequest request) {
 		Set<?> parameterKeys = request.getParameterMap().keySet();
+		if ((parameterKeys.size() == 1) && (parameterKeys.contains("state"))) {
+			return false;
+		}
 		return parameterKeys.size() > 0 
 				&& !parameterKeys.contains("oauth_token") 
 				&& !parameterKeys.contains("code") 
@@ -173,6 +208,7 @@ public class SocialAuthenticationFilter extends AbstractAuthenticationProcessing
 	 * The URL must be like {filterProcessesUrl}/{providerId}. 
 	 * @return <code>true</code> if the filter should attempt authentication, <code>false</code> otherwise.
 	 */
+	@Deprecated
 	protected boolean requiresAuthentication(HttpServletRequest request, HttpServletResponse response) {
 		String providerId = getRequestedProviderId(request);
 		if (providerId != null){
@@ -208,6 +244,13 @@ public class SocialAuthenticationFilter extends AbstractAuthenticationProcessing
 		connection.sync();
 		repo.addConnection(connection);
 		return connection;
+	}
+	
+	@SuppressWarnings("deprecation")
+	@Override
+	public void setFilterProcessesUrl(String filterProcessesUrl) {
+		super.setFilterProcessesUrl(filterProcessesUrl);
+		this.filterProcessesUrl = filterProcessesUrl;
 	}
 
 	// private helpers
@@ -252,10 +295,10 @@ public class SocialAuthenticationFilter extends AbstractAuthenticationProcessing
 		uri = uri.substring(request.getContextPath().length());
 
 		// remaining uri must start with filterProcessesUrl
-		if (!uri.startsWith(getFilterProcessesUrl())) {
+		if (!uri.startsWith(filterProcessesUrl)) {
 			return null;
 		}
-		uri = uri.substring(getFilterProcessesUrl().length());
+		uri = uri.substring(filterProcessesUrl.length());
 
 		// expect /filterprocessesurl/provider, not /filterprocessesurlproviderr
 		if (uri.startsWith("/")) {
@@ -294,7 +337,7 @@ public class SocialAuthenticationFilter extends AbstractAuthenticationProcessing
 			// connection unknown, register new user?
 			if (signupUrl != null) {
 				// store ConnectionData in session and redirect to register page
-				addSignInAttempt(request.getSession(), token.getConnection());
+				sessionStrategy.setAttribute(new ServletWebRequest(request), ProviderSignInAttempt.SESSION_ATTRIBUTE, new ProviderSignInAttempt(token.getConnection()));
 				throw new SocialAuthenticationRedirectException(buildSignupUrl(request));
 			}
 			throw e;
@@ -319,11 +362,9 @@ public class SocialAuthenticationFilter extends AbstractAuthenticationProcessing
 			repo.updateConnection(connection);
 		}
 	}
-	
-	private void addSignInAttempt(HttpSession session, Connection<?> connection) {
-		session.setAttribute(ProviderSignInAttempt.SESSION_ATTRIBUTE, new ProviderSignInAttempt(connection, authServiceLocator, usersConnectionRepository));
-	}
 
 	private static final String DEFAULT_FAILURE_URL = "/signin";
+	
+	private static final String DEFAULT_FILTER_PROCESSES_URL = "/auth";
 
 }

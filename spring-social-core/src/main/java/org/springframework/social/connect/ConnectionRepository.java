@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,7 @@ public interface ConnectionRepository {
 	 * </pre>
 	 * The returned map is sorted by providerId and entry values are ordered by rank.
 	 * Returns an empty map if the user has no connections.
+	 * @return all connections the current user has across all providers.
 	 */
 	MultiValueMap<String, Connection<?>> findAllConnections();
 	

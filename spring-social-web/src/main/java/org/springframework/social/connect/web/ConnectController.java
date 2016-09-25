@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -84,7 +84,11 @@ public class ConnectController implements InitializingBean {
 	
 	private String viewPath = "connect/";
 
+	private String connectionStatusUrlPath = "/connect/";
+
 	private SessionStrategy sessionStrategy = new HttpSessionSessionStrategy();
+
+	private String applicationUrl = null;
 	
 	/**
 	 * Constructs a ConnectController.
@@ -140,7 +144,7 @@ public class ConnectController implements InitializingBean {
 	 * @param applicationUrl the application URL value
 	 */
 	public void setApplicationUrl(String applicationUrl) {
-		connectSupport.setApplicationUrl(applicationUrl);
+		this.applicationUrl = applicationUrl;
 	}
 	
 	/**
@@ -151,6 +155,15 @@ public class ConnectController implements InitializingBean {
 	 */
 	public void setViewPath(String viewPath) {
 		this.viewPath = viewPath;
+	}
+
+	/**
+	 * Sets the URL path prefix for connection status redirects.
+	 *
+	 * @param connectionStatusUrlPath the URL path prefix for connection status redirects.
+	 */
+	public void setConnectionStatusUrlPath(String connectionStatusUrlPath) {
+		this.connectionStatusUrlPath = connectionStatusUrlPath;
 	}
 	
 	/**
@@ -184,6 +197,9 @@ public class ConnectController implements InitializingBean {
 
 	/**
 	 * Render the status of connections across all providers to the user as HTML in their web browser.
+	 * @param request the request
+	 * @param model the model
+	 * @return the view name of the connection status page for all providers
 	 */
 	@RequestMapping(method=RequestMethod.GET)
 	public String connectionStatus(NativeWebRequest request, Model model) {
@@ -197,6 +213,10 @@ public class ConnectController implements InitializingBean {
 	
 	/**
 	 * Render the status of the connections to the service provider to the user as HTML in their web browser.
+	 * @param providerId the ID of the provider to show connection status
+	 * @param request the request
+	 * @param model the model
+	 * @return the view name of the connection status page for all providers
 	 */
 	@RequestMapping(value="/{providerId}", method=RequestMethod.GET)
 	public String connectionStatus(@PathVariable String providerId, NativeWebRequest request, Model model) {
@@ -216,6 +236,9 @@ public class ConnectController implements InitializingBean {
 	 * Process a connect form submission by commencing the process of establishing a connection to the provider on behalf of the member.
 	 * For OAuth1, fetches a new request token from the provider, temporarily stores it in the session, then redirects the member to the provider's site for authorization.
 	 * For OAuth2, redirects the user to the provider's site for authorization.
+	 * @param providerId the provider ID to connect to
+	 * @param request the request
+	 * @return a RedirectView to the provider's authorization page or to the connection status page if there is an error
 	 */
 	@RequestMapping(value="/{providerId}", method=RequestMethod.POST)
 	public RedirectView connect(@PathVariable String providerId, NativeWebRequest request) {
@@ -235,6 +258,9 @@ public class ConnectController implements InitializingBean {
 	 * Called after the user authorizes the connection, generally done by having he or she click "Allow" in their web browser at the provider's site.
 	 * On authorization verification, connects the user's local account to the account they hold at the service provider
 	 * Removes the request token from the session since it is no longer valid after the connection is established.
+	 * @param providerId the provider ID to connect to
+	 * @param request the request
+	 * @return a RedirectView to the connection status page
 	 */
 	@RequestMapping(value="/{providerId}", method=RequestMethod.GET, params="oauth_token")
 	public RedirectView oauth1Callback(@PathVariable String providerId, NativeWebRequest request) {
@@ -253,6 +279,9 @@ public class ConnectController implements InitializingBean {
 	 * Process the authorization callback from an OAuth 2 service provider.
 	 * Called after the user authorizes the connection, generally done by having he or she click "Allow" in their web browser at the provider's site.
 	 * On authorization verification, connects the user's local account to the account they hold at the service provider.
+	 * @param providerId the provider ID to connect to
+	 * @param request the request
+	 * @return a RedirectView to the connection status page
 	 */
 	@RequestMapping(value="/{providerId}", method=RequestMethod.GET, params="code")
 	public RedirectView oauth2Callback(@PathVariable String providerId, NativeWebRequest request) {
@@ -270,6 +299,12 @@ public class ConnectController implements InitializingBean {
 	/**
 	 * Process an error callback from an OAuth 2 authorization as described at http://tools.ietf.org/html/rfc6749#section-4.1.2.1.
 	 * Called after upon redirect from an OAuth 2 provider when there is some sort of error during authorization, typically because the user denied authorization.
+	 * @param providerId the provider ID that the connection was attempted for
+	 * @param error the error parameter sent from the provider
+	 * @param errorDescription the error_description parameter sent from the provider
+	 * @param errorUri the error_uri parameter sent from the provider
+	 * @param request the request
+	 * @return a RedirectView to the connection status page
 	 */
 	@RequestMapping(value="/{providerId}", method=RequestMethod.GET, params="error")
 	public RedirectView oauth2ErrorCallback(@PathVariable String providerId, 
@@ -289,6 +324,9 @@ public class ConnectController implements InitializingBean {
 	 * Remove all provider connections for a user account.
 	 * The user has decided they no longer wish to use the service provider from this application.
 	 * Note: requires {@link HiddenHttpMethodFilter} to be registered with the '_method' request parameter set to 'DELETE' to convert web browser POSTs to DELETE requests.
+	 * @param providerId the provider ID to remove the connections for
+	 * @param request the request
+	 * @return a RedirectView to the connection status page
 	 */
 	@RequestMapping(value="/{providerId}", method=RequestMethod.DELETE)
 	public RedirectView removeConnections(@PathVariable String providerId, NativeWebRequest request) {
@@ -303,6 +341,10 @@ public class ConnectController implements InitializingBean {
 	 * Remove a single provider connection associated with a user account.
 	 * The user has decided they no longer wish to use the service provider account from this application.
 	 * Note: requires {@link HiddenHttpMethodFilter} to be registered with the '_method' request parameter set to 'DELETE' to convert web browser POSTs to DELETE requests.
+     * @param providerId the provider ID to remove connections for
+     * @param providerUserId the user's ID at the provider
+     * @param request the request
+     * @return a RedirectView to the connection status page
 	 */
 	@RequestMapping(value="/{providerId}/{providerUserId}", method=RequestMethod.DELETE)
 	public RedirectView removeConnection(@PathVariable String providerId, @PathVariable String providerUserId, NativeWebRequest request) {
@@ -317,16 +359,19 @@ public class ConnectController implements InitializingBean {
 	/**
 	 * Returns the view name of a general connection status page, typically displaying the user's connection status for all providers.
 	 * Defaults to "/connect/status". May be overridden to return a custom view name.
+	 * @return the view name of the connection status page
 	 */
 	protected String connectView() {
 		return getViewPath() + "status";
 	}
+	
 	
 	/**
 	 * Returns the view name of a page to display for a provider when the user is not connected to the provider.
 	 * Typically this page would offer the user an opportunity to create a connection with the provider.
 	 * Defaults to "connect/{providerId}Connect". May be overridden to return a custom view name.
 	 * @param providerId the ID of the provider to display the connection status for.
+	 * @return the view name of a page to display when the user isn't connected to the provider
 	 */
 	protected String connectView(String providerId) {
 		return getViewPath() + providerId + "Connect";		
@@ -337,6 +382,7 @@ public class ConnectController implements InitializingBean {
 	 * Typically this page would allow the user to disconnect from the provider.
 	 * Defaults to "connect/{providerId}Connected". May be overridden to return a custom view name.
 	 * @param providerId the ID of the provider to display the connection status for.
+     * @return the view name of a page to display when the user is connected to the provider
 	 */
 	protected String connectedView(String providerId) {
 		return getViewPath() + providerId + "Connected";		
@@ -348,10 +394,11 @@ public class ConnectController implements InitializingBean {
 	 * May be overridden to handle custom redirection needs.
 	 * @param providerId the ID of the provider for which a connection was created or deleted.
 	 * @param request the NativeWebRequest used to access the servlet path when constructing the redirect path.
+	 * @return a RedirectView to the page to be displayed after a connection is created or deleted
 	 */
 	protected RedirectView connectionStatusRedirect(String providerId, NativeWebRequest request) {
 		HttpServletRequest servletRequest = request.getNativeRequest(HttpServletRequest.class);
-		String path = "/connect/" + providerId + getPathExtension(servletRequest);
+		String path = connectionStatusUrlPath + providerId + getPathExtension(servletRequest);
 		if (prependServletPath(servletRequest)) {
 			path = servletRequest.getServletPath() + path;
 		}
@@ -361,6 +408,9 @@ public class ConnectController implements InitializingBean {
 	// From InitializingBean
 	public void afterPropertiesSet() throws Exception {
 		this.connectSupport = new ConnectSupport(sessionStrategy);
+		if (applicationUrl != null) {
+			this.connectSupport.setApplicationUrl(applicationUrl);
+		}
 	}
 
 	// internal helpers
@@ -463,10 +513,10 @@ public class ConnectController implements InitializingBean {
 		}
 	}
 	
-	private static final String DUPLICATE_CONNECTION_ATTRIBUTE = "social_addConnection_duplicate";
+	protected static final String DUPLICATE_CONNECTION_ATTRIBUTE = "social_addConnection_duplicate";
 	
-	private static final String PROVIDER_ERROR_ATTRIBUTE = "social_provider_error";
+	protected static final String PROVIDER_ERROR_ATTRIBUTE = "social_provider_error";
 
-	private static final String AUTHORIZATION_ERROR_ATTRIBUTE = "social_authorization_error";
+	protected static final String AUTHORIZATION_ERROR_ATTRIBUTE = "social_authorization_error";
 
 }

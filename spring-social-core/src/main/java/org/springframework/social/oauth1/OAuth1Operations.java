@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ public interface OAuth1Operations {
 	 * The version of OAuth1 implemented by this operations instance.
 	 * @see OAuth1Version#CORE_10
 	 * @see OAuth1Version#CORE_10_REVISION_A
+	 * @return The version of OAuth1 implemented by this operations instance.
 	 */
 	OAuth1Version getVersion();
 	

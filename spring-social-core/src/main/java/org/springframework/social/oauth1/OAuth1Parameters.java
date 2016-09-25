@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,7 @@ public final class OAuth1Parameters extends ParameterMap {
 	
 	/**
 	 * The authorization callback url.
-	 * This value must be included for OAuth 1.0 providers (and NOT for OAuth 1.0a)
+	 * @return The authorization callback url.
 	 */
 	public String getCallbackUrl() {
 		return getFirst(OAUTH_CALLBACK);
@@ -67,6 +67,7 @@ public final class OAuth1Parameters extends ParameterMap {
 	/**
 	 * Sets the authorization callback url.
 	 * This value must be included for OAuth 1.0 providers (and NOT for OAuth 1.0a).
+	 * @param callbackUrl The authorization callback url.
 	 */
 	public void setCallbackUrl(String callbackUrl) {
 		set(OAUTH_CALLBACK, callbackUrl);

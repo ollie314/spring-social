@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,7 +24,7 @@ import org.springframework.social.connect.mem.InMemoryUsersConnectionRepository;
 
 /**
  * Support class providing methods for configuring a singleton {@link InMemoryUsersConnectionRepository} bean and a request-scoped InMemoryConnectionRepository bean.
- * Used by InMemoryConnectionRepositoryRegistrar (for {@link EnableInMemoryConnectionRepository}) and InMemoryConnectionRepositoryBeanDefinitionParser for XML configuration.
+ * Used by InMemoryConnectionRepositoryBeanDefinitionParser for XML configuration.
  * @author Craig Walls
  */
 public abstract class InMemoryConnectionRepositoryConfigSupport extends AbstractConnectionRepositoryConfigSupport {

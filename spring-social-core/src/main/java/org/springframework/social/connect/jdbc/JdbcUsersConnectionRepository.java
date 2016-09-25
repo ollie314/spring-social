@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -64,6 +64,7 @@ public class JdbcUsersConnectionRepository implements UsersConnectionRepository 
 	 * The command to execute to create a new local user profile in the event no user id could be mapped to a connection.
 	 * Allows for implicitly creating a user profile from connection data during a provider sign-in attempt.
 	 * Defaults to null, indicating explicit sign-up will be required to complete the provider sign-in attempt.
+	 * @param connectionSignUp a {@link ConnectionSignUp} object
 	 * @see #findUserIdsWithConnection(Connection)
 	 */
 	public void setConnectionSignUp(ConnectionSignUp connectionSignUp) {

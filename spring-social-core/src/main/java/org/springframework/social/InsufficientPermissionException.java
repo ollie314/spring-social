@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,7 @@ public class InsufficientPermissionException extends OperationNotPermittedExcept
 	/**
 	 * The permission required to access the resource.
 	 * May be null if the required permission is unknown.
+	 * @return the permission required to access the resource
 	 */
 	public String getRequiredPermission() {
 		return requiredPermission;

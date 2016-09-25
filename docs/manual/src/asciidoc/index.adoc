@@ -1,5 +1,5 @@
 = Spring Social Reference
-Craig Walls; Keith Donald; Roy Clarkson
+Craig Walls; Keith Donald; Roy Clarkson; Greg Turnquist
 
 The Spring Social project enables your applications to establish
 Connections with Software-as-a-Service (SaaS) Providers such as Facebook
@@ -904,9 +904,9 @@ create table UserConnection (userId varchar(255) not null,
     displayName varchar(255),
     profileUrl varchar(512),
     imageUrl varchar(512),
-    accessToken varchar(255) not null,                  
-    secret varchar(255),
-    refreshToken varchar(255),
+    accessToken varchar(512) not null,
+    secret varchar(512),
+    refreshToken varchar(512),
     expireTime bigint,
     primary key (userId, providerId, providerUserId));
 create unique index UserConnectionRank on UserConnection(userId, providerId, rank);
@@ -1072,7 +1072,7 @@ In this case, we're returning an instance of `AuthenticationNameUserIdSource`.
 This implementation of the `UserIdSource` interface assumes that the application is secured with Spring Security.
 It uses the `SecurityContextHolder` to lookup a `SecurityContext`, and from that return the `name` property of the `Authentication` object.
 
-If your application isn't secured with Spring Security, you'll need to implement the `UserIdSource` interface as approprate for your application's security mechanism.
+If your application isn't secured with Spring Security, you'll need to implement the `UserIdSource` interface as appropriate for your application's security mechanism.
 The `UserIdSource` interface looks like this:
 
 ```java
@@ -1803,13 +1803,16 @@ Or to set the sign up URL using XML configuration:
 Before redirecting to the sign up page, `ProviderSignInController` collects some information about the authentication attempt. 
 This information can be used to prepopulate the sign up form and then, after successful sign up, to establish a connection between the new account and the provider account.
 
-To prepopulate the sign up form, you can fetch the user profile data from a connection retrieved from `ProviderSignInUtils.getConnection()`.
+To prepopulate the sign up form, you can fetch the user profile data from a connection retrieved from `ProviderSignInUtils#getConnection()`.
 For example, consider this Spring MVC controller method that setups up the sign up form with a `SignupForm` to bind to the sign up form:
 
 ```java
+@Autowired
+ProviderSignInUtils providerSignInUtils;
+
 @RequestMapping(value="/signup", method=RequestMethod.GET)
 public SignupForm signupForm(WebRequest request) {
-    Connection<?> connection = ProviderSignInUtils.getConnection(request);
+    Connection<?> connection = providerSignInUtils.getConnection(request);
     if (connection != null) {
         return SignupForm.fromProviderUser(connection.fetchUserProfile());
     } else {
@@ -1818,7 +1821,7 @@ public SignupForm signupForm(WebRequest request) {
 }
 ```
 
-If `ProviderSignInUtils.getConnection()` returns a connection, that means there was a failed provider sign in attempt that can be completed if the user registers to the application. 
+If `ProviderSignInUtils#getConnection()` returns a connection, that means there was a failed provider sign in attempt that can be completed if the user registers to the application. 
 In that case, a `SignupForm` object is created from the user profile data obtained from the connection's `fetchUserProfile()` method. 
 Within `fromProviderUser()`, the `SignupForm` properties may be set like this:
 
@@ -1840,8 +1843,8 @@ The availability of `UserProfile`'s properties will depend on the provider.
 Twitter, for example, does not provide a user's email address, so the `getEmail()` method will always return null after a sign in attempt with Twitter.
 
 After the user has successfully signed up in your application a connection can be created between the new local user account and their provider account. 
-To complete the connection call `ProviderSignInUtils.handlePostSignUp()`. 
-For example, the following method handles the sign up form submission, creates an account and then calls `ProviderSignInUtils.handlePostSignUp()` to complete the connection:
+To complete the connection call `ProviderSignInUtils#doPostSignUp()`. 
+For example, the following method handles the sign up form submission, creates an account and then calls `ProviderSignInUtils#doPostSignUp()` to complete the connection:
 
 ```java
 @RequestMapping(value="/signup", method=RequestMethod.POST)
@@ -1852,7 +1855,7 @@ public String signup(@Valid SignupForm form, BindingResult formBinding, WebReque
     Account account = createAccount(form, formBinding);
     if (account != null) {
         SignInUtils.signin(account.getUsername());
-        ProviderSignInUtils.handlePostSignUp(account.getUsername(), request);
+        ProviderSignInUtils.doPostSignUp(account.getUsername(), request);
         return "redirect:/";
     }
     return null;
@@ -2524,4 +2527,62 @@ public class TwitterConnectionFactory extends OAuth1ConnectionFactory<Facebook> 
 Consult the source and JavaDoc API for ConnectionFactory and its
 subclasses more information, examples, and advanced customization
 options.
+
+[[section_creatingAProviderProject]]
+=== Extending an existing Service Provider
+
+Are you already using an existing provider like Spring Social GitHub? You may run into the situation where the Spring Social API doesn't cover every operation you need. Or you may wish to apply extra behavior like caching certain operations. This section explores extension points Spring Social's core includes.
+
+[[]]
+==== Adding extra operations
+
+If you look at the implementation you are using, it probably has a core template, like GitHubTemplate. But what if it doesn't have the operation you are looking for? You can either wait for the team to develop it, or write it yourself.
+
+To write your own extension, simply extend the core class and add your own implementation:
+
+[source,java]
+----
+public class ExtendedGitHubTemplate extends GitHubTemplate {
+
+    public static final String API_URL_BASE = "https://api.github.com";
+
+    public ExtendedGitHubTemplate(String githubToken) {
+        super(githubToken);
+    }
+
+    public List<GitHubRepo> findAllRepositories(String type, String name) {
+        return asList(this.getRestTemplate().getForObject(
+                API_URL_BASE + "/{type}/{name}/repos?per_page=100",
+                GitHubRepo[].class, type, name));
+    }
+----
+
+This fragment extends Spring Social GitHub's `GitHubTemplate`. It adds a new method, `findAllRepositories`. By extending the core template, you are granted access to an already-connected `RestTemplate` via `getRestTemplate()`. You have to assemble the URI yourself, but online documentation from the provider puts the power in your hands.
+
+[[]]
+==== Augmenting Spring Social's RestTemplate
+
+By design, Spring Social uses an embedded `RestTemplate` to do the legwork of interacting with the provider. That way, if you are using more than one Spring Social project, each one's individual instance won't collide with other. As a side effect, it may seem hard to apply something like caching. It's not.
+
+Spring Social's `AbstractOAuth2ApiBinding`, the root of all OAuth2-based provider templates, provides a hook ot post process the `RestTemplate` when it gets created.
+
+[source,java]
+----
+public class ExtendedGitHubTemplate extends GitHubTemplate {
+
+    ...
+
+    @Override
+    protected RestTemplate postProcess(RestTemplate restTemplate) {
+        AspectJProxyFactory factory = new AspectJProxyFactory(restTemplate);
+        factory.addAspect(RestTemplateAspect.class);
+        factory.setProxyTargetClass(true);
+        return factory.getProxy()
+    }
+----
+
+In this example, the code extends `GitHubTemplate` and then overrides sthe `postProcess()` method. In Spring Social core, the *restTemplate* is simply passed through during creation and nothing is changed. In this example, the code creates an AspectJ proxy, adds some `RestTemplateAspect` advice, sets the factory to proxy the class and not its interface, and then returns back a proxy.
+
+You can already do things like wrap `GitHubTemplate` operations with caching. This hook enables you to apply any type of advice directly to the `RestTemplate`.
+
 

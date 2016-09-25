@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ public class SocialAuthenticationServiceRegistry extends ConnectionFactoryRegist
 
 	/**
 	 * Add a {@link SocialAuthenticationService} to this registry.
+	 * @param authenticationService a SocialAuthenticationService to register
 	 */
 	public void addAuthenticationService(SocialAuthenticationService<?> authenticationService) {
 		addConnectionFactory(authenticationService.getConnectionFactory());

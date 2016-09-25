@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,8 @@ public class ParameterMap implements MultiValueMap<String, String> {
 	/**
 	 * Wraps the provided Map&lt;String, List&lt;String&gt;&gt; as a MultiValueMap&lt;String, String&gt;.
 	 * The map passed in is stored internally.
-	 * No copy is created.
+	 * No copy is created
+	 * @param parameters the parameters as a Map.
 	 */
 	protected ParameterMap(Map<String, List<String>> parameters) {
 		if (parameters != null) {

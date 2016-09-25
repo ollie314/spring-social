@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -167,8 +167,8 @@ public class SocialAuthenticationFilterTest {
 		return Collections.emptySet();
 	}
 	
-	private static <T> Set<T> set(T ... o) {
-		return Collections.unmodifiableSet(new HashSet<T>(Arrays.asList(o)));
+	private static Set<String> set(String ... o) {
+		return Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(o)));
 	}
 
 	private static class FilterTestEnv {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -354,9 +354,11 @@ public class ConnectSupportTest {
 		ConnectSupport support = new ConnectSupport();
 		MockHttpServletRequest mockRequest = new PortAwareMockHttpServletRequest();
 		mockRequest.addParameter("code", "authorization-grant");
+		mockRequest.addParameter("state", "STATE");
 		mockRequest.setScheme("http");
 		mockRequest.setServerName("somesite.com");
 		mockRequest.setRequestURI("/connect/someprovider");
+		mockRequest.getSession().setAttribute("oauth2State", "STATE");
 		ServletWebRequest request = new ServletWebRequest(mockRequest);
 		Connection<?> connection = support.completeConnection(new TestOAuth2ConnectionFactory(), request);
 		assertEquals("TestUser", connection.getDisplayName());
@@ -466,6 +468,11 @@ public class ConnectSupportTest {
 			super("someprovider", SERVICE_PROVIDER, API_ADAPTER);
 		}
 		
+//		@Override
+//		public boolean supportsStateParameter() {
+//			return false;
+//		}
+		
 		@Override
 		public Connection<TestApi> createConnection(AccessGrant accessGrant) {
 			return new OAuth2Connection<TestApi>("someprovider", "providerUserId", accessGrant.getAccessToken(),
@@ -503,6 +510,7 @@ public class ConnectSupportTest {
 				public AccessGrant exchangeCredentialsForAccess(String username, String password, MultiValueMap<String, String> additionalParameters) {
 					return null;
 				}				
+				@Deprecated
 				public AccessGrant refreshAccess(String refreshToken, String scope, MultiValueMap<String, String> additionalParameters) {
 					return null;
 				}

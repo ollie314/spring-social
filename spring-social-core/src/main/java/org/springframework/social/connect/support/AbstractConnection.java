@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 the original author or authors.
+ * Copyright 2015 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,6 +141,7 @@ public abstract class AbstractConnection<A> implements Connection<A> {
 
 	/**
 	 * Provides subclasses with access to a monitor that can be used to synchronize access to this connection.
+	 * @return the monitor object
 	 */
 	protected Object getMonitor() {
 		return monitor;
